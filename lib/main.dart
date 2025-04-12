@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config.dart';
-import 'package:carebellmom/PersonalPage.dart';
-import 'notification.dart';
 import 'package:carebellmom/adminPages/admin.dart';
 import 'package:carebellmom/nursePages/nurse.dart';
 import 'package:carebellmom/patientPages/patient.dart';
@@ -239,6 +237,7 @@ class _LoginFormState extends State<LoginForm> {
           controller: _passwordController,
           decoration: InputDecoration(labelText: "Password"),
           obscureText: !_showPassword,
+          onSubmitted: (_) => _login(),
         ),
         Row(
           children: [

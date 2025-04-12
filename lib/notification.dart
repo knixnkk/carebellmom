@@ -3,11 +3,59 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
+  @override
+  _NotificationPageState createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  List<dynamic> notifications = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchNotifications();
+  }
+
+  Future<String> getSessionUsername() async {
+    final username = await SharedPreferences.getInstance().then(
+      (prefs) => prefs.getString('username') ?? 'user',
+    );
+    return username; // Replace with actual session username retrieval
+  }
+
+  Future<void> fetchNotifications() async {
+    final String username =
+        await getSessionUsername(); // Fetch username from session
+
+    final Uri url = Uri.parse(
+      '${baseUrl}/api/notifications?username=$username',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          notifications = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load notifications');
+      }
+    } catch (e) {
+      print('Error fetching notifications: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double screenheight = MediaQuery.of(context).size.height;
+    double screenHeight = MediaQuery.of(context).size.height;
     return ListView(
       children: [
         SizedBox(height: 20),
@@ -18,30 +66,22 @@ class NotificationPage extends StatelessWidget {
           ),
           color: Colors.white,
           child: SizedBox(
-            height: screenheight * 0.8,
-            child: ListView(
-              scrollDirection: Axis.vertical,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.notifications_outlined),
-                  title: Text('Title'),
-                  subtitle: Text('Subtitle'),
-                ),
-                Divider(),
-                ListTile(
-                  leading: Icon(Icons.notifications_active_outlined),
-                  title: Text('Title'),
-                  subtitle: Text('Subtitle'),
-                ),
-                Divider(),
-                ListTile(
-                  leading: Icon(Icons.notifications_outlined),
-                  title: Text('Title'),
-                  subtitle: Text('Subtitle'),
-                ),
-                Divider(),
-              ],
-            ),
+            height: screenHeight * 0.8,
+            child:
+                isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : ListView.separated(
+                      itemCount: notifications.length,
+                      separatorBuilder: (context, index) => Divider(),
+                      itemBuilder: (context, index) {
+                        final item = notifications[index];
+                        return ListTile(
+                          leading: Icon(Icons.notifications),
+                          title: Text(item['title'] ?? 'No title'),
+                          subtitle: Text(item['body'] ?? 'No message'),
+                        );
+                      },
+                    ),
           ),
         ),
       ],

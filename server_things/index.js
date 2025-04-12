@@ -14,20 +14,20 @@ const port = process.env.PORT || 3000;
 
 
 // Middleware
-app.use(cors()); // Allow requests from Flutter app
-app.use(express.json()); // Parse JSON body
+app.use(cors());
+app.use(express.json());
 
 // MongoDB Connection
-const uri = "mongodb://localhost:27017"; // MongoDB connection URI
+const uri = "mongodb://localhost:27017"; 
 const client = new MongoClient(uri);
 
-let db; // Variable to store the database connection
+let db; 
 
 // Connect to MongoDB
 async function connectToDatabase() {
   try {
     await client.connect();
-    db = client.db("User"); // Connect to the "carebellmom" database
+    db = client.db("User"); 
     console.log("Connected to MongoDB");
 
     // Log all collections in the database
@@ -35,7 +35,7 @@ async function connectToDatabase() {
     console.log("Collections in the database:", collections.map((col) => col.name));
   } catch (err) {
     console.error("MongoDB connection error:", err);
-    process.exit(1); // Exit the application if the connection fails
+    process.exit(1); 
   }
 }
 connectToDatabase();
@@ -74,7 +74,7 @@ app.post("/api/login", async (req, res) => {
         success: true,
         message: "Login successful!",
         name: user.username,
-        role: user.role, // Include the user's role in the response
+        role: user.role,
       });
       console.log(user.role);
     } else {
@@ -120,7 +120,7 @@ app.post("/api/register", async (req, res) => {
         username,
         display_name: name,
         role,
-        telephone, // Store the telephone number for nurses
+        telephone, 
       });
     } else if (role == "admin") {
       await db.collection("admin_data").insertOne({
@@ -157,7 +157,7 @@ app.get("/api/users", async (_, res) => {
       projection: { username: 1, display_name: 1, telephone: 1 }
     }).toArray();
     
-    console.log("Fetched users:", users); // Log the fetched users
+    console.log("Fetched users:", users); 
     res.json(users);
   } catch (err) {
     console.error("Error fetching users:", err);
@@ -187,7 +187,7 @@ app.post("/api/get_user_data", async (req, res) => {
           password: 0, 
           role: 0,
         } 
-      } // Exclude the '_id', 'password', and 'role' fields
+      } 
     );
     if (!userData) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -199,16 +199,6 @@ app.post("/api/get_user_data", async (req, res) => {
   }
 });
 
-app.get("/api/notifications", async (req, res) => {
-  try {
-    // Fetch all messages from the messages collection
-    const messages = await db.collection("messages").find({}).toArray();
-    res.json(messages);
-  } catch (err) {
-    console.error("Error fetching messages:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
-});
 
 app.post("/api/edit_user_data", async (req, res) => {
   const { username, role, data } = req.body;
@@ -276,6 +266,31 @@ app.post("/api/get_GA_state", async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
+
+app.get("/api/notifications", async (req, res) => {
+  const { username } = req.query;
+  console.log("Fetching notifications for user:", username);
+  try {
+    const messages = await db.collection("notifications_data").find(
+      {
+        username: username
+      },
+      {
+        projection: { _id: 0 }
+      }
+    )
+      .sort({ timestamp: -1 }) 
+      .limit(10) 
+      .toArray(); 
+
+    console.log("Fetched notifications:", messages); 
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
