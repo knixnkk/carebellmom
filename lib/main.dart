@@ -5,9 +5,10 @@ import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_not
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config.dart';
 import 'package:carebellmom/PersonalPage.dart';
-import 'package:carebellmom/adminPages/admin.dart';
 import 'notification.dart';
-import 'package:carebellmom/adminPages/AdminHomePage.dart';
+import 'package:carebellmom/adminPages/admin.dart';
+import 'package:carebellmom/nursePages/nurse.dart';
+import 'package:carebellmom/patientPages/patient.dart';
 
 void main() {
   runApp(const MyApp());
@@ -194,23 +195,10 @@ class _LoginFormState extends State<LoginForm> {
           SnackBar(content: Text("Login successful! Welcome ${data['name']}")),
         );
 
-        // Navigate based on the role
-        if (data['role'] == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AdminPage()),
-          );
-        } else if (data['role'] == 'nurse') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => NursePage()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => UserPage()),
-          );
-        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => UserPage()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Login failed: ${response.body}")),
@@ -244,6 +232,7 @@ class _LoginFormState extends State<LoginForm> {
         SizedBox(height: 20),
         TextField(
           controller: _usernameController,
+          textInputAction: TextInputAction.next,
           decoration: InputDecoration(labelText: "Username"),
         ),
         TextField(
@@ -288,132 +277,34 @@ class _UserPageState extends State<UserPage> {
     double screenwidth = MediaQuery.of(context).size.width;
     double screenheight = MediaQuery.of(context).size.height;
     return Scaffold(
-      bottomNavigationBar: AnimatedNotchBottomBar(
-        notchBottomBarController: _controller,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index; // Update the current index
-          });
-          debugPrint("Tab $index selected");
-        },
-        bottomBarHeight: screenheight * 0.08,
-        bottomBarWidth: screenwidth,
-        showLabel: false,
-        kIconSize: 24.0,
-        kBottomRadius: 5.0,
-        removeMargins: true,
-        textOverflow: TextOverflow.ellipsis,
-        maxLine: 2,
-        bottomBarItems: [
-          const BottomBarItem(
-            inActiveItem: Icon(
-              Icons.notifications_on_outlined,
-              color: Colors.blueGrey,
-            ),
-            activeItem: Icon(
-              Icons.notifications_on_outlined,
-              color: Colors.blueAccent,
-            ),
-          ),
-          const BottomBarItem(
-            inActiveItem: Icon(Icons.home, color: Colors.blueGrey),
-            activeItem: Icon(Icons.home, color: Colors.blueAccent),
-          ),
-          const BottomBarItem(
-            inActiveItem: Icon(Icons.person, color: Colors.blueGrey),
-            activeItem: Icon(Icons.person, color: Colors.blueAccent),
-          ),
-        ],
-      ),
       body: Center(
-        child:
-            _currentIndex == 0
-                ? NotificationPage() // Show Text when index is 0
-                : _currentIndex == 1
-                ? AdminHomePage()
-                : _currentIndex == 2
-                ? PersonalPage() // Show Index3Page when index is 3
-                : Text("Other Content"), // Default content for other indices
+        child: FutureBuilder<String>(
+          future: SharedPreferences.getInstance().then(
+            (prefs) => prefs.getString('role') ?? 'user',
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            } else {
+              return getWidgetByRole(snapshot.data ?? 'user');
+            }
+          },
+        ), // Default to PatientPage
       ),
     );
   }
 }
 
-class UserHomePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("User Home Page")),
-      body: Center(child: Text("Welcome, User!")),
-    );
-  }
-}
-
-class NursePage extends StatefulWidget {
-  NursePage({super.key});
-
-  @override
-  _NursePageState createState() => _NursePageState();
-}
-
-class _NursePageState extends State<NursePage> {
-  final NotchBottomBarController _controller = NotchBottomBarController(
-    index: 1,
-  );
-  int _currentIndex = 1; // Default index
-
-  @override
-  Widget build(BuildContext context) {
-    double screenwidth = MediaQuery.of(context).size.width;
-    double screenheight = MediaQuery.of(context).size.height;
-    return Scaffold(
-      bottomNavigationBar: AnimatedNotchBottomBar(
-        notchBottomBarController: _controller,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index; // Update the current index
-          });
-          debugPrint("Tab $index selected");
-        },
-        bottomBarHeight: screenheight * 0.08,
-        bottomBarWidth: screenwidth,
-        showLabel: false,
-        kIconSize: 24.0,
-        kBottomRadius: 5.0,
-        removeMargins: true,
-        textOverflow: TextOverflow.ellipsis,
-        maxLine: 2,
-        bottomBarItems: [
-          const BottomBarItem(
-            inActiveItem: Icon(
-              Icons.notifications_on_outlined,
-              color: Colors.blueGrey,
-            ),
-            activeItem: Icon(
-              Icons.notifications_on_outlined,
-              color: Colors.blueAccent,
-            ),
-          ),
-          const BottomBarItem(
-            inActiveItem: Icon(Icons.home, color: Colors.blueGrey),
-            activeItem: Icon(Icons.home, color: Colors.blueAccent),
-          ),
-          const BottomBarItem(
-            inActiveItem: Icon(Icons.person, color: Colors.blueGrey),
-            activeItem: Icon(Icons.person, color: Colors.blueAccent),
-          ),
-        ],
-      ),
-      body: Center(
-        child:
-            _currentIndex == 0
-                ? NotificationPage() // Show Text when index is 0
-                : _currentIndex == 1
-                ? AdminHomePage()
-                : _currentIndex == 2
-                ? PersonalPage() // Show Index3Page when index is 3
-                : Text("Other Content"), // Default content for other indices
-      ),
-    );
+Widget getWidgetByRole(String role) {
+  switch (role) {
+    case 'nurse':
+      return NursePage();
+    case 'admin':
+      return AdminPage();
+    case 'patient':
+    default:
+      return PatientPage();
   }
 }
