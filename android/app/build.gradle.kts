@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.carebellmom"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = project.property("ndkVersion") as String
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

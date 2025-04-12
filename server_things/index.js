@@ -3,9 +3,15 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
 const bcrypt = require("bcrypt");
-
+const cron = require("node-cron");
+const { exec } = require("child_process");
+const { runDailyCheck } = require("./dailyTrimesterCheck");
+const { runDailyGACheck } = require("./updateGA");
 const app = express();
 const port = process.env.PORT || 3000;
+
+
+
 
 // Middleware
 app.use(cors()); // Allow requests from Flutter app
@@ -34,11 +40,23 @@ async function connectToDatabase() {
 }
 connectToDatabase();
 
+cron.schedule("* * * * *", async () => {
+  console.log("⏰ Running Daily Trimester and GA Check...");
+
+  try {
+    // Run both tasks sequentially
+    await runDailyGACheck();
+    await runDailyCheck();
+  } catch (error) {
+    console.error("❌ Error during scheduled task:", error);
+  }
+});
+
+
 // Simple route
 app.get("/", (req, res) => {
   res.send("Backend is working!");
 });
-
 // Example API route
 app.post("/api/echo", (req, res) => {
   const { message } = req.body;
@@ -95,6 +113,7 @@ app.post("/api/register", async (req, res) => {
         GA,
         LMP,
         US,
+        telephone
       });
     } else if (role === "nurse") {
       await db.collection("nurses_data").insertOne({
@@ -130,22 +149,12 @@ app.post("/api/send_notification", async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
-app.get("/api/notifications", async (req, res) => {
-  try {
-    // Fetch all messages from the messages collection
-    const messages = await db.collection("messages").find({}).toArray();
-    res.json(messages);
-  } catch (err) {
-    console.error("Error fetching messages:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
-});
 
 // Get all users
 app.get("/api/users", async (_, res) => {
   try {
     const users = await db.collection("patients_data").find({}, {
-      projection: { username: 1, display_name: 1 }
+      projection: { username: 1, display_name: 1, telephone: 1 }
     }).toArray();
     
     console.log("Fetched users:", users); // Log the fetched users
@@ -190,6 +199,83 @@ app.post("/api/get_user_data", async (req, res) => {
   }
 });
 
+app.get("/api/notifications", async (req, res) => {
+  try {
+    // Fetch all messages from the messages collection
+    const messages = await db.collection("messages").find({}).toArray();
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post("/api/edit_user_data", async (req, res) => {
+  const { username, role, data } = req.body;
+  try {
+    let collectionName;
+    if (role === "patient") {
+      collectionName = "patients_data";
+    } else if (role === "nurse") {
+      collectionName = "nurses_data";
+    } else if (role === "admin") {
+      collectionName = "admin_data";
+    } else {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+
+    // Update the user data in the appropriate collection
+    const result = await db.collection(collectionName).updateOne(
+      { username },
+      { $set: data }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ success: false, message: "User not found or no changes made" });
+    }
+    res.json({ success: true, message: "User data updated successfully" });
+  } catch (err) {
+    console.error("Error updating user data:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+app.post("/api/delete_user", async (req, res) => {
+  const { username, role } = req.body;
+  try {
+    let collectionName;
+    if (role === "patient") {
+      collectionName = "patients_data";
+    } else if (role === "nurse") {
+      collectionName = "nurses_data";
+    } else if (role === "admin") {
+      collectionName = "admin_data";
+    } else {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+
+    // Delete the user from the appropriate collection
+    const result = await db.collection(collectionName).deleteOne({ username });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post("/api/get_GA_state", async (req, res) => {
+  const { GA } = req.body;
+  try {
+    const state = getGATrimester(GA);
+    console.log(GA);
+    res.json({ success: true, state });
+  } catch (err) {
+    console.error("Error fetching GA state:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

@@ -19,6 +19,11 @@ dependencies:
   flutter_fast_forms: ^18.1.0
   dropdown_search: ^6.0.2
   shared_preferences: ^2.5.3
+  sliver_tools: ^0.2.12
+  giffy_dialog: ^2.3.0
+  material_dialogs: ^1.1.5
+  lottie: ^3.3.1
+  custom_radio_grouped_button: ^2.2.1
   
 dev_dependencies:
   flutter_test:
