@@ -67,7 +67,7 @@ class _PersonalPageState extends State<PersonalPage> {
     await prefs.clear();
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const MyApp()),
+      MaterialPageRoute(builder: (context) => IntroPage()), // or LoginPage()
       (route) => false,
     );
   }
@@ -81,7 +81,11 @@ class _PersonalPageState extends State<PersonalPage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
     }
 
     if (userJson == null) {
@@ -106,7 +110,10 @@ class _PersonalPageState extends State<PersonalPage> {
         const SizedBox(height: 10),
         Text(
           userJson!['display_name'] ?? "Unknown",
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         const SizedBox(height: 20),
         Expanded(
@@ -117,19 +124,39 @@ class _PersonalPageState extends State<PersonalPage> {
                 delegate: SliverChildBuilderDelegate((context, index) {
                   String key = userJson!.keys.elementAt(index);
                   String titleText = "";
-                  String bodyText = userJson![key]?.toString() ?? '-';
-
+                  String bodyText = userJson![key]?.toString() ?? '';
+                  if (bodyText == "") {
+                    return SizedBox.shrink();
+                  }
                   if (key == "username") {
-                    titleText = "User ID";
+                    titleText = "ชื่อผู้ใช้ (Username)";
                   } else if (key == "display_name") {
                     return SizedBox.shrink(); // Skip "display_name"
+                  } else if (key == "lastNotify") {
+                    return SizedBox.shrink(); // Skip "lastNotify"
+                  } else if (key == "action") {
+                    return SizedBox.shrink();
                   } else if (key == "GA") {
-                    titleText = "Gestational Age";
+                    titleText = "อายุครรภ์ (Gestational Age)";
                     int totalDays =
                         int.tryParse(userJson![key]?.toString() ?? '0') ?? 0;
                     int weeks = totalDays ~/ 7;
                     int days = totalDays % 7;
-                    bodyText = "$weeks weeks $days days";
+                    bodyText = "$weeks สัปดาห์ $days วัน";
+                  } else if (key == "EDC") {
+                    titleText = "วันครบกำหนดคลอด (Due Date)";
+                  } else if (key == "lastMenstrualPeriod") {
+                    titleText = "วันแรกของประจำเดือน (LMP)";
+                    DateTime lmpDate = DateTime.parse(userJson![key]);
+                    bodyText =
+                        "${lmpDate.day}/${lmpDate.month}/${lmpDate.year}";
+                  } else if (key == "trimester") {
+                    titleText = "Trimester";
+                  } else if (key == "childDate") {
+                    titleText = "วันคลอด (Delivery Date)";
+                    DateTime childDate = DateTime.parse(userJson![key]);
+                    bodyText =
+                        "${childDate.day}/${childDate.month}/${childDate.year}";
                   } else {
                     titleText = key;
                   }
@@ -138,20 +165,33 @@ class _PersonalPageState extends State<PersonalPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 30.0,
+                          vertical: 10.0,
+                        ),
                         child: Text(
                           titleText,
-                          style: TextStyle(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text(bodyText, style: TextStyle(fontSize: 16)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 30.0,
+                          vertical: 10.0,
+                        ),
+                        child: Text(
+                          " $bodyText",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(fontSize: 16),
+                        ),
                       ),
-                      const Divider(thickness: 1.0),
+                      const Divider(thickness: 1.0, indent: 15, endIndent: 15),
                     ],
                   );
                 }, childCount: userJson?.length ?? 0),
@@ -178,7 +218,10 @@ class _PersonalPageState extends State<PersonalPage> {
               },
               child: Text(
                 'Logout',
-                style: TextStyle(fontSize: 20, color: Colors.white),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

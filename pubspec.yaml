@@ -24,6 +24,12 @@ dependencies:
   material_dialogs: ^1.1.5
   lottie: ^3.3.1
   custom_radio_grouped_button: ^2.2.1
+  slide_action: ^0.0.2
+  im_stepper: ^1.0.1+1
+  flutter_cache_manager: ^3.4.1
+  bottom_picker: ^3.0.0
+  flutter_holo_date_picker: ^2.0.0
+  matertino_radio: ^1.0.5
   
 dev_dependencies:
   flutter_test:
@@ -38,3 +44,9 @@ flutter:
     - assets/index_page/
     - assets/jk/
     - assets/personal_page/
+  fonts:
+    - family: Anuphan
+      fonts:
+        - asset: assets/fonts/Anuphan-Regular.ttf
+        - asset: assets/fonts/Anuphan-Bold.ttf
+          weight: 700

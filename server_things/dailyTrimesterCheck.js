@@ -17,50 +17,63 @@ async function connectToDatabase() {
 }
 
 function getGATrimester(GA) {
-  if (GA < 0 || isNaN(GA)) return "Invalid GA";
-
-  const segments = [
-    { upper: 12, label: "First Trimester" },
-    { upper: 20, label: "Second Trimester" },
-    { upper: 26, label: "Third Trimester" },
-    { upper: 32, label: "Fourth Segment" },
-    { upper: 34, label: "Fifth Segment" },
-    { upper: 36, label: "Sixth Segment" },
-    { upper: 38, label: "Seventh Segment" },
-    { upper: 40, label: "Eighth Segment" },
-    { upper: 42, label: "Full Term" },
-  ];
+  if (GA < 0 || isNaN(GA)) return null;
 
   const totalWeeks = GA / 7;
+  if (totalWeeks < 12) {
+    return { label: "First Trimester", stepper: 0 };
+  }
+
+  const segments = [
+    { upper: 20, lower:12, label: "Second Trimester", stepper: 1 },
+    { upper: 26, lower:20, label: "Third Trimester", stepper: 2 },
+    { upper: 32, lower:26, label: "Fourth Segment", stepper: 3 },
+    { upper: 34, lower:32, label: "Fifth Segment", stepper: 4 },
+    { upper: 36, lower:34, label: "Sixth Segment", stepper: 5 },
+    { upper: 38, lower:36, label: "Seventh Segment", stepper: 6 },
+    { upper: 40, lower:38, label: "Eighth Segment", stepper: 7 },
+  ];
+
   for (let segment of segments) {
-    if (totalWeeks === segment.upper) {
-      return segment.label;
+    if ((totalWeeks <= segment.upper) && (totalWeeks >= segment.lower)) {
+      return segment;
     }
   }
 
-  return "";
+  return null;
 }
-
 async function checkAndNotify(patient) {
   const { username, display_name, GA } = patient;
-  const currentTrimester = getGATrimester(GA);
 
-  if (currentTrimester === "Invalid GA") return;
+  const segmentInfo = getGATrimester(GA);
+  if (!segmentInfo) return;
+
+  const { label: currentTrimester, stepper } = segmentInfo;
 
   try {
     const patientRecord = await db.collection("patients_data").findOne({ username });
-    const lastNotified = patientRecord?.lastNotifiedTrimester;
+    const lastNotified = patientRecord?.lastNotify;
 
     if (lastNotified !== currentTrimester) {
       const title = `New Trimester Reached!`;
       const body = `Hi ${display_name}, you've entered the ${currentTrimester}.`;
       const timestamp = new Date();
 
-      await db.collection("notifications_data").insertOne({ username, title, body, timestamp });
+      await db.collection("notifications_data").insertOne({
+        username,
+        title,
+        body,
+        timestamp,
+      });
 
       await db.collection("patients_data").updateOne(
         { username },
-        { $set: { lastNotifiedTrimester: currentTrimester } }
+        {
+          $set: {
+            lastNotify: currentTrimester,
+            action: stepper,
+          },
+        }
       );
 
       console.log(`📢 Notification sent to ${display_name}: ${currentTrimester}`);
@@ -71,6 +84,8 @@ async function checkAndNotify(patient) {
     console.error("❌ Error in checkAndNotify:", error);
   }
 }
+
+
 
 async function runDailyCheck() {
   await connectToDatabase();

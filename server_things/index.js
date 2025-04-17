@@ -291,6 +291,94 @@ app.get("/api/notifications", async (req, res) => {
   }
 });
 
+app.get('/api/getAction', async (req, res) => {
+  const { username } = req.query;
+
+  try {
+    const patient = await db.collection("patients_data").findOne({ username });
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, action: patient.action });
+  } catch (err) {
+    console.error("Error fetching action:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post('/api/updateAction', async (req, res) => {
+  const { username, action } = req.body;
+
+  try {
+    const updateResult = await db.collection("patients_data").updateOne(
+      { username },
+      { $set: { action } }
+    );
+    const addedChildDate = await db.collection("patients_data").updateOne(
+      { username },
+      { $set: { childDate: new Date() } }
+    );
+    if (updateResult.modifiedCount === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "อัพเดทข้อมูลเสร็จสิ้น",
+      action 
+    });
+  } catch (err) {
+    console.error("Error updating action:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post('/api/create_baby_data', async (req, res) => {
+  const { mother, birthday, action, gender, child} = req.body;
+
+  try {
+    const result = await db.collection("baby_data").insertOne({
+      child : child,
+      mother : mother,
+      birthday : birthday,
+      action : action,
+      gender : gender,
+    });
+
+    if (result.insertedCount === 0) {
+      return res.status(500).json({ success: false, message: "Failed to create baby data" });
+    }
+
+    res.status(201).json({ success: true, message: "Baby data created successfully" });
+  } catch (err) {
+    console.error("Error creating baby data:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post('/api/get_baby_data', async (req, res) => {
+  const { mother } = req.body; // Get 'mother' from the request body
+  console.log("Fetching baby data for mother:", mother); // Debugging log
+  try {
+    // Fetch baby data from the database using 'mother' as a filter
+    const babyData = await db.collection("baby_data").findOne({ mother });
+
+    if (!babyData) {
+      // Respond with a 404 status if no data is found
+      return res.status(404).json({ success: false, message: "Baby data not found" });
+    }
+
+    // Return the fetched baby data if found
+    res.json({ success: true, data: babyData });
+  } catch (err) {
+    // Handle any errors and respond with a 500 status code
+    console.error("Error fetching baby data:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

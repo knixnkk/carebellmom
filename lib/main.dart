@@ -7,8 +7,20 @@ import 'config.dart';
 import 'package:carebellmom/adminPages/admin.dart';
 import 'package:carebellmom/nursePages/nurse.dart';
 import 'package:carebellmom/patientPages/patient.dart';
+import 'package:flutter/services.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent, // Make status bar transparent
+      statusBarIconBrightness:
+          Brightness
+              .light, // For dark icons (use Brightness.light for white icons)
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -18,26 +30,42 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // Removes the debug banner globally
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: 'Anuphan',
+        scaffoldBackgroundColor: const Color(0xffffffff),
+
+        // Main colors
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Color(0xFFEFB6C8), // Your primary color
+          brightness: Brightness.light,
+        ),
+
+        // AppBar styling
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFEFB6C8),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+
+        // Button style
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFFEFB6C8), // Primary
+            foregroundColor: Colors.white, // Text color
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
       home: IntroPage(),
     );
   }
 }
 
-class IntroPage extends StatefulWidget {
-  @override
-  _IntroPageState createState() => _IntroPageState();
-}
-
-class _IntroPageState extends State<IntroPage> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {});
-    });
-  }
-
+class IntroPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -46,7 +74,7 @@ class _IntroPageState extends State<IntroPage> {
     return Scaffold(
       body: Column(
         children: [
-          Spacer(), // Pushes the content below to the bottom
+          const Spacer(),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -60,12 +88,11 @@ class _IntroPageState extends State<IntroPage> {
                 ),
                 Image.asset(
                   'assets/intro_page/nurse.png',
-                  height: screenHeight * 0.6, // 30% of the screen height
-                  width: screenWidth * 0.7, // 50% of the screen width
-                  fit:
-                      BoxFit.contain, // Ensures the image scales proportionally
+                  height: screenHeight * 0.6,
+                  width: screenWidth * 0.7,
+                  fit: BoxFit.contain,
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Text(
                   "Carebell Mom",
                   style: TextStyle(
@@ -76,29 +103,27 @@ class _IntroPageState extends State<IntroPage> {
               ],
             ),
           ),
-          Spacer(), // Pushes the button to the bottom
+          const Spacer(),
           Padding(
-            padding: const EdgeInsets.all(
-              16.0,
-            ), // Add padding around the button
+            padding: const EdgeInsets.all(16.0),
             child: SizedBox(
-              width: double.infinity, // Full width of the screen
-              height: 50, // Height of the button
+              width: double.infinity,
+              height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero, // Square edges
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
                   ),
                   backgroundColor: Colors.blue,
                 ),
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    MaterialPageRoute(builder: (_) => FadeInLoginForm()),
                   );
                 },
-                child: Text(
-                  'Next',
+                child: const Text(
+                  'ต่อไป',
                   style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
               ),
@@ -107,15 +132,6 @@ class _IntroPageState extends State<IntroPage> {
         ],
       ),
     );
-  }
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(home: Scaffold(body: FadeInLoginForm()));
   }
 }
 
@@ -132,17 +148,19 @@ class _FadeInLoginFormState extends State<FadeInLoginForm> {
     super.initState();
     Future.delayed(const Duration(milliseconds: 500), () {
       setState(() {
-        _opacity = 1.0; // Start fade-in animation
+        _opacity = 1.0;
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _opacity,
-      duration: const Duration(seconds: 2), // Duration of fade-in
-      child: LoginForm(),
+    return Scaffold(
+      body: AnimatedOpacity(
+        opacity: _opacity,
+        duration: const Duration(seconds: 2),
+        child: LoginForm(),
+      ),
     );
   }
 }
@@ -164,12 +182,14 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   Future<void> _login() async {
-    final String username = _usernameController.text;
-    final String password = _passwordController.text;
+    final username = _usernameController.text;
+    final password = _passwordController.text;
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please enter both username and password")),
+        const SnackBar(
+          content: Text("Please enter both username and password"),
+        ),
       );
       return;
     }
@@ -183,7 +203,6 @@ class _LoginFormState extends State<LoginForm> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('username', username);
         await prefs.setString('role', data['role']);
@@ -195,7 +214,7 @@ class _LoginFormState extends State<LoginForm> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => UserPage()),
+          MaterialPageRoute(builder: (_) => UserPage()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -211,31 +230,33 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    double screenwidth = MediaQuery.of(context).size.width;
+    double screenWidth = MediaQuery.of(context).size.width;
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         Center(
           child: Text(
             "Login",
             style: TextStyle(
-              fontSize: screenwidth * 0.075,
+              fontSize: screenWidth * 0.075,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        SizedBox(height: 20),
-        Image(image: AssetImage("assets/login_page/logo.gif")),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
+        const Image(image: AssetImage("assets/login_page/logo.gif")),
+        const SizedBox(height: 20),
         TextField(
           controller: _usernameController,
           textInputAction: TextInputAction.next,
-          decoration: InputDecoration(labelText: "Username"),
+          decoration: const InputDecoration(
+            labelText: "เลขบัตรประจำตัวประชาชน",
+          ),
         ),
         TextField(
           controller: _passwordController,
-          decoration: InputDecoration(labelText: "Password"),
+          decoration: const InputDecoration(labelText: "Password"),
           obscureText: !_showPassword,
           onSubmitted: (_) => _login(),
         ),
@@ -243,24 +264,19 @@ class _LoginFormState extends State<LoginForm> {
           children: [
             Checkbox(
               value: _showPassword,
-              onChanged: (bool? value) {
-                _togglePasswordVisibility();
-              },
+              onChanged: (bool? value) => _togglePasswordVisibility(),
             ),
-            Text("Show Password"),
+            const Text("Show Password"),
           ],
         ),
-        ElevatedButton(
-          onPressed: _login, // Call the login function on button press
-          child: Text("Login"),
-        ),
+        ElevatedButton(onPressed: _login, child: const Text("Login")),
       ],
     );
   }
 }
 
 class UserPage extends StatefulWidget {
-  UserPage({super.key});
+  const UserPage({super.key});
 
   @override
   _UserPageState createState() => _UserPageState();
@@ -269,28 +285,29 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   final NotchBottomBarController _controller = NotchBottomBarController(
     index: 1,
-  ); // Set default page to Page 2
-  int _currentIndex = 1; // Default index
+  );
+  int _currentIndex = 1;
+
   @override
   Widget build(BuildContext context) {
-    double screenwidth = MediaQuery.of(context).size.width;
-    double screenheight = MediaQuery.of(context).size.height;
     return Scaffold(
-      body: Center(
-        child: FutureBuilder<String>(
-          future: SharedPreferences.getInstance().then(
-            (prefs) => prefs.getString('role') ?? 'user',
-          ),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            } else {
-              return getWidgetByRole(snapshot.data ?? 'user');
-            }
-          },
-        ), // Default to PatientPage
+      body: FutureBuilder<String>(
+        future: SharedPreferences.getInstance().then(
+          (prefs) => prefs.getString('role') ?? 'user',
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else {
+            return getWidgetByRole(snapshot.data ?? 'user');
+          }
+        },
       ),
     );
   }

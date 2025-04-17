@@ -69,7 +69,11 @@ class _NotificationPageState extends State<NotificationPage> {
             height: screenHeight * 0.8,
             child:
                 isLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? Center(
+                      child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
                     : ListView.separated(
                       itemCount: notifications.length,
                       separatorBuilder: (context, index) => Divider(),
